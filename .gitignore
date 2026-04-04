@@ -48,3 +48,6 @@ Thumbs.db
 
 docs/
 stitch/
+service-account.json
+tests/
+backend/service-account.json

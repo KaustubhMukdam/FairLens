@@ -1,0 +1,4 @@
+status,duration,credit_history,purpose,amount,savings,employment_duration,installment_rate,personal_status_sex,other_debtors,present_residence,property,age,other_installment_plans,housing,number_credits,job,people_liable,telephone,foreign_worker,credit_risk
+no checking account,18,existing credits paid back duly,radio/television,1049,unknown/no savings account,< 1 yr,4,female : non-single or male : single,none,4,car or other,21,none,rent,1,skilled employee/official,1,none,yes,good
+< 0 DM,9,existing credits paid back duly,radio/television,2799,unknown/no savings account,1 <= ... < 4 yrs,2,male : married/widowed,none,2,unknown / no property,36,none,rent,2,skilled employee/official,2,none,yes,good
+no checking account,12,critical account/other credits existing,education,841,< 100 DM,4 <= ... < 7 yrs,2,female : non-single or male : single,none,4,unknown / no property,23,none,rent,1,unskilled - resident,1,none,yes,good

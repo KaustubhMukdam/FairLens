@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # Google Cloud
     google_cloud_project: str = "your-project-id"
+    google_application_credentials: Optional[str] = None
     gcs_bucket_name: str = "fairlens-uploads"
     firestore_collection: str = "audits"
     
