@@ -32,8 +32,9 @@ async def upload_dataset(file: UploadFile = File(...)):
     
     uri = upload_file(file_bytes, file.filename)
     
-    # Store the unique identifier
-    file_id = uri.split("/")[-1]
+    # Return the full URI as file_id so audit pipeline can download it
+    # This will be either: gs://bucket/file_id or local:///tmp/fairlens_uploads/file_id
+    file_id = uri
     
     return UploadResponse(
         file_id=file_id,

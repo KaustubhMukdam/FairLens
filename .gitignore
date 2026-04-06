@@ -51,3 +51,4 @@ stitch/
 service-account.json
 tests/
 backend/service-account.json
+backend/test_e2e.py

@@ -26,19 +26,48 @@ def upload_file(file_bytes: bytes, filename: str) -> str:
         return f"local://{local_path}"
 
 def download_file(gcs_uri: str) -> bytes:
-    """Downloads a file from GCS by its URI."""
+    """
+    Downloads a file by its URI.
+    
+    Supports:
+    - GCS: gs://bucket-name/file-id
+    - Local: local:///tmp/fairlens_uploads/file-id
+    
+    Args:
+        gcs_uri: Full URI to file (from upload_file())
+    
+    Returns:
+        File bytes
+    
+    Raises:
+        RuntimeError: If file cannot be downloaded
+    """
+    # Handle local storage fallback
     if gcs_uri.startswith("local://"):
-        local_path = gcs_uri.lstrip("local://")
-        with open(local_path, "rb") as f:
-            return f.read()
+        local_path = gcs_uri.replace("local://", "", 1)
+        try:
+            with open(local_path, "rb") as f:
+                return f.read()
+        except Exception as e:
+            raise RuntimeError(f"Failed to read local file {local_path}: {e}")
+    
+    # Handle GCS storage
+    if gcs_uri.startswith("gs://"):
+        try:
+            # Parse GCS URI: gs://bucket-name/file-id
+            parts = gcs_uri.replace("gs://", "", 1).split("/", 1)
+            if len(parts) != 2:
+                raise ValueError(f"Invalid GCS URI format: {gcs_uri}")
             
-    try:
-        bucket_name = gcs_uri.split("/")[2]
-        file_id = "/".join(gcs_uri.split("/")[3:])
-        
-        storage_client = storage.Client()
-        bucket = storage_client.bucket(bucket_name)
-        blob = bucket.blob(file_id)
-        return blob.download_as_bytes()
-    except Exception as e:
-        raise RuntimeError(f"GCP Credentials missing or GCS fetch failed: {e}")
+            bucket_name = parts[0]
+            file_id = parts[1]
+            
+            storage_client = storage.Client()
+            bucket = storage_client.bucket(bucket_name)
+            blob = bucket.blob(file_id)
+            return blob.download_as_bytes()
+        except Exception as e:
+            raise RuntimeError(f"GCS download failed: {e}")
+    
+    # Unknown URI format
+    raise RuntimeError(f"Unknown file URI format: {gcs_uri}. Must start with 'gs://' or 'local://'.")

@@ -4,3 +4,10 @@ id,name,first,last,sex,age,age_cat,race,juv_fel_count,decile_score,juv_misd_coun
 3,ed philo,ed,philo,Male,24,Less than 25,African-American,0,4,0,1,4,F,Possession of Cocaine,1,1
 4,marcu brown,marcu,brown,Male,23,Less than 25,African-American,0,8,1,0,1,F,Possession of Cannabis,0,0
 5,bouthy pierrelouis,bouthy,pierrelouis,Male,43,25 - 45,Other,0,1,0,0,2,F,arrest case no charge,0,0
+6,james wilson,james,wilson,Female,45,25 - 45,Caucasian,0,2,0,0,1,F,Drug Possession,0,0
+7,sarah johnson,sarah,johnson,Female,52,Greater than 45,Caucasian,0,1,0,0,0,F,Theft,0,0
+8,david lee,david,lee,Male,31,25 - 45,African-American,1,6,1,0,3,F,Armed Robbery,1,1
+9,robert garcia,robert,garcia,Male,28,25 - 45,Hispanic,0,5,0,1,2,F,Burglary,1,0
+10,anna martinez,anna,martinez,Female,26,25 - 45,Hispanic,0,2,0,0,0,F,Simple Assault,0,0
+11,christopher brown,christopher,brown,Male,35,25 - 45,African-American,0,7,1,0,4,F,Drug Distribution,1,1
+12,lisa anderson,lisa,anderson,Female,41,25 - 45,Caucasian,0,1,0,0,0,F,Fraud,0,0
