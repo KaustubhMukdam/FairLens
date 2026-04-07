@@ -40,6 +40,9 @@ class AuditResult(BaseModel):
     # SHAP explainability
     shap_results: Optional[SHAPResult] = None
     
+    # Gemini narrative
+    narrative: Optional[Dict[str, Any]] = None  # Results from Gemini (summary, severity_rating, etc)
+    
     # Progress tracking
     progress_pct: int = 0
     current_step: Optional[str] = None  # "scanning", "metrics", "shap", "complete"

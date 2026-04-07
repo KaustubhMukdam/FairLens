@@ -28,6 +28,7 @@ from app.core.dataset_scanner import scan_dataset
 from app.core.bias_detector import compute_fairness_metrics
 from app.core.shap_explainer import explain_predictions
 from app.services.firestore_service import get_firestore_service
+from app.services.gemini_service import generate_audit_narrative
 from app.config import settings
 
 router = APIRouter(prefix="/audit", tags=["audit"])
@@ -39,7 +40,8 @@ def _run_audit_pipeline(
     target_column: str,
     protected_attributes: list[str],
     prediction_column: str = None,
-    filename: str = None
+    filename: str = None,
+    request: AuditRequest = None
 ):
     """
     Background task that runs the complete audit pipeline.
@@ -169,7 +171,29 @@ def _run_audit_pipeline(
                 protected_attrs_found=[]
             )
         
-        # Step 9: Assemble complete result
+        # Step 9: Generate Gemini Narrative
+        fs.update_audit(audit_id, {
+            "progress_pct": 90,
+            "current_step": "generating_narrative"
+        })
+        
+        narrative = None
+        try:
+            # Prepare audit data for Gemini
+            audit_data = {
+                "target_column": target_column,
+                "protected_attributes": protected_attributes,
+                "dataset_info": dataset_info,
+                "fairness_metrics": [m.model_dump() for m in metrics] if metrics else [],
+                "shap_results": shap_results.model_dump() if shap_results else {},
+                "domain_context": getattr(request, 'domain_context', None) or 'general'
+            }
+            narrative = generate_audit_narrative(audit_data)
+        except Exception as e:
+            print(f"Error generating Gemini narrative: {e}")
+            narrative = None
+        
+        # Step 10: Assemble complete result
         audit_result = AuditResult(
             audit_id=audit_id,
             status=AuditStatus.COMPLETE,
@@ -180,12 +204,13 @@ def _run_audit_pipeline(
             dataset_info=dataset_info,
             fairness_metrics=metrics,
             shap_results=shap_results,
-            progress_pct=100,
-            current_step="complete",
+            narrative=narrative,
+            progress_pct=95,
+            current_step="storing_results",
             completed_at=datetime.utcnow().isoformat()
         )
         
-        # Step 10: Store results in Firestore
+        # Step 11: Store results in Firestore
         fs.update_audit(audit_id, {
             "status": AuditStatus.COMPLETE.value,
             "progress_pct": 100,
@@ -263,7 +288,8 @@ async def run_audit(request: AuditRequest, background_tasks: BackgroundTasks):
             target_column=request.target_column,
             protected_attributes=request.protected_attributes,
             prediction_column=request.prediction_column,
-            filename=request.file_id  # We'll get better filename from upload response later
+            filename=request.file_id,
+            request=request
         )
         
         return {

@@ -1,53 +1,109 @@
-import React, { useState } from 'react';
-import { Briefcase, Building, Scale, Loader2 } from 'lucide-react';
-import { uploadDataset } from '../../api/upload';
-import type { UploadResponse } from '../../types/audit';
+import { useState } from 'react';
+import { api } from '../../api/client';
+import { useAuditStore } from '../../store/auditStore';
 
 interface DemoSelectorProps {
-  onUploadSuccess: (data: UploadResponse) => void;
+  onDemoStart: (fileName: string) => void;
 }
 
-export const DemoSelector: React.FC<DemoSelectorProps> = ({ onUploadSuccess }) => {
-  const [loadingCard, setLoadingCard] = useState<string | null>(null);
+export const DemoSelector = ({ onDemoStart }: DemoSelectorProps) => {
+  const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { setUploadedFile } = useAuditStore();
 
-  const handleDemoClick = async (type: string, filename: string) => {
-    setLoadingCard(type);
+  const demos = [
+    {
+      id: 'hiring',
+      icon: '👤',
+      title: 'Hiring Model',
+      description: 'UCI Adult Income dataset — gender & race bias',
+      file: 'adult_income_sample.csv',
+      domain: 'hiring',
+    },
+    {
+      id: 'lending',
+      icon: '🏦',
+      title: 'Lending Model',
+      description: 'German Credit dataset — age & sex bias',
+      file: 'german_credit_sample.csv',
+      domain: 'lending',
+    },
+    {
+      id: 'criminal',
+      icon: '⚖️',
+      title: 'Criminal Justice',
+      description: 'COMPAS dataset — racial bias in recidivism',
+      file: 'compas_sample.csv',
+      domain: 'criminal_justice',
+    },
+  ];
+
+  const handleRunDemo = async (demo: typeof demos[0]) => {
+    setLoading(demo.id);
+    setError(null);
+
     try {
-      const response = await fetch(`/fixtures/${filename}`);
-      if (!response.ok) throw new Error("Failed to fetch fixture");
+      // Fetch the CSV file
+      const response = await fetch(`/fixtures/${demo.file}`);
+      if (!response.ok) throw new Error('Failed to load demo file');
+
       const blob = await response.blob();
-      const file = new File([blob], filename, { type: 'text/csv' });
-      
-      const data = await uploadDataset(file);
-      onUploadSuccess(data);
+      const file = new File([blob], demo.file, { type: 'text/csv' });
+
+      // Upload to backend
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadRes = await api.post('/upload/dataset', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      setUploadedFile(file);
+      onDemoStart(demo.file);
     } catch (err) {
-      console.error("Failed to load demo dataset", err);
-      alert("Failed to load demo dataset. Ensure fixtures are in public/fixtures/.");
-    } finally {
-      setLoadingCard(null);
+      const msg = err instanceof Error ? err.message : 'Failed to upload demo';
+      setError(msg);
+      setLoading(null);
     }
   };
 
-  const demos = [
-    { id: 'hiring', title: 'Hiring (Adult Income)', icon: Briefcase, file: 'adult_income_sample.csv', desc: 'Predicts income >$50K based on census data.' },
-    { id: 'lending', title: 'Lending (German Credit)', icon: Building, file: 'german_credit_sample.csv', desc: 'Predicts credit risk based on financial attributes.' },
-    { id: 'justice', title: 'Criminal Justice (COMPAS)', icon: Scale, file: 'compas_sample.csv', desc: 'Predicts recidivism risk using defendant profiles.' }
-  ];
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="space-y-3">
+      <h3 className="text-lg font-bold text-gray-900 text-left mb-4">Interactive Demo</h3>
+      <p className="text-sm text-gray-600 mb-4 text-left">SELECT SCENARIO</p>
+
+      {error && (
+        <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</div>
+      )}
+
       {demos.map((demo) => (
-        <button
+        <div
           key={demo.id}
-          onClick={() => handleDemoClick(demo.id, demo.file)}
-          disabled={loadingCard !== null}
-          className="flex flex-col items-center p-6 bg-white border border-gray-200 rounded-xl hover:shadow-lg transition-all duration-300 disabled:opacity-50 hover:-translate-y-1"
+          className="bg-white rounded-lg p-4 border border-gray-200 hover:border-indigo-300 hover:shadow-md transition"
         >
-          {loadingCard === demo.id ? (
-            <Loader2 className="w-10 h-10 text-blue-500 mb-4 animate-spin" />
-          ) : (
-            <demo.icon className="w-10 h-10 text-blue-500 mb-4" />
-          )}
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="text-2xl mb-2">{demo.icon}</div>
+              <h4 className="font-bold text-gray-900">{demo.title}</h4>
+              <p className="text-sm text-gray-600 my-2">{demo.description}</p>
+            </div>
+            <button
+              onClick={() => handleRunDemo(demo)}
+              disabled={!!loading}
+              className="ml-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold text-sm transition disabled:opacity-50 whitespace-nowrap"
+            >
+              {loading === demo.id ? '...' : 'Run Demo →'}
+            </button>
+          </div>
+        </div>
+      ))}
+
+      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-xs text-indigo-700 mt-4">
+        ⚡ Gemini 1.5 Pro Enabled: Context-aware bias detection for high-stakes enterprise decisions.
+      </div>
+    </div>
+  );
+};
           <h3 className="font-semibold text-lg text-gray-900 mb-2">{demo.title}</h3>
           <p className="text-sm text-gray-500 text-center">{demo.desc}</p>
         </button>
