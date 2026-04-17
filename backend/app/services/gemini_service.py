@@ -13,9 +13,17 @@ Key Functions:
 import json
 import os
 import vertexai
-from vertexai.generative_models import GenerativeModel, Content, Part
+from vertexai.generative_models import GenerativeModel, Content, Part, HarmCategory, HarmBlockThreshold
 from typing import Dict, Any, Optional
 from app.config import settings
+
+# Disable safety blocks for fairness auditing to prevent truncated strings on sensitive datasets (like COMPAS)
+_FAIRNESS_SAFETY_SETTINGS = {
+    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+}
 
 
 _vertexai_initialized = False
@@ -110,7 +118,7 @@ Be specific about groups and metrics. Reference actual violation values where av
         full_prompt = f"{system_prompt}\n\nAudit Data:\n{prompt}\n\nProvide response as valid JSON only, no markdown."
         
         # Call Gemini 1.5 Pro
-        model = GenerativeModel("gemini-1.5-pro")
+        model = GenerativeModel("gemini-2.5-pro")
         
         response = model.generate_content(
             full_prompt,
@@ -118,8 +126,9 @@ Be specific about groups and metrics. Reference actual violation values where av
                 "temperature": 0.7,
                 "top_p": 0.95,
                 "top_k": 40,
-                "max_output_tokens": 2048,
-            }
+                "response_mime_type": "application/json",
+            },
+            safety_settings=_FAIRNESS_SAFETY_SETTINGS
         )
         
         # Parse response
@@ -183,7 +192,7 @@ Answer the user's question based on the audit data provided below. Be specific a
 
         full_prompt = f"{system_prompt}\n\nAudit Data:\n{context}\n\nQuestion: {question}"
         
-        model = GenerativeModel("gemini-1.5-pro")
+        model = GenerativeModel("gemini-2.5-pro")
         
         response = model.generate_content(
             full_prompt,
@@ -191,8 +200,8 @@ Answer the user's question based on the audit data provided below. Be specific a
                 "temperature": 0.7,
                 "top_p": 0.95,
                 "top_k": 40,
-                "max_output_tokens": 1024,
-            }
+            },
+            safety_settings=_FAIRNESS_SAFETY_SETTINGS
         )
         
         return response.text.strip()
@@ -243,6 +252,24 @@ def _build_audit_context_prompt(audit_data: Dict[str, Any]) -> str:
         lines.append("## Protected Attributes")
         for attr in audit_data["protected_attributes"]:
             lines.append(f"- {attr}")
+        lines.append("")
+        
+    # Group Statistics
+    if "dataset_info" in audit_data:
+        group_stats = audit_data["dataset_info"].get("protected_groups_stats", {})
+        if group_stats:
+            lines.append("## Protected Group Distributions")
+            for attr, data in group_stats.items():
+                 counts = data.get("value_counts", {})
+                 lines.append(f"- {attr} demographics: {counts}")
+            lines.append("")
+            
+    # Narrative
+    if "narrative" in audit_data:
+        narrative = audit_data["narrative"]
+        lines.append("## Auditor Initial Findings")
+        lines.append(f"Summary: {narrative.get('summary', 'N/A')}")
+        lines.append(f"Root Cause Analysis: {narrative.get('root_cause_analysis', 'N/A')}")
         lines.append("")
     
     return "\n".join(lines)

@@ -61,7 +61,14 @@ async def chat_about_audit(
     
     # Get answer from Gemini
     try:
-        answer = answer_audit_question(audit_data, request.question)
+        # The actual metrics and narrative are stored under the "results" key in Firestore
+        audit_results = audit_data.get("results", {})
+        
+        # Copy domain_context from root if it exists
+        if "domain_context" in audit_data and "domain_context" not in audit_results:
+            audit_results["domain_context"] = audit_data["domain_context"]
+            
+        answer = answer_audit_question(audit_results, request.question)
         return ChatResponse(answer=answer, audit_id=audit_id)
     except Exception as e:
         raise HTTPException(

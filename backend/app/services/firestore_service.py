@@ -39,7 +39,8 @@ class FirestoreService:
         try:
             if FIRESTORE_AVAILABLE:
                 self.client = firestore.Client(
-                    project=settings.google_cloud_project
+                    project=settings.google_cloud_project,
+                    database="fairlens-db"
                 )
                 self.collection_name = settings.firestore_collection
             else:

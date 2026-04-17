@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 _creds_path = Path('./service-account.json').resolve()
 if _creds_path.exists():
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = str(_creds_path)
-    print(f"✓ Set GOOGLE_APPLICATION_CREDENTIALS to {_creds_path}")
+    print(f"[OK] Set GOOGLE_APPLICATION_CREDENTIALS to {_creds_path}")
 
 
 class Settings(BaseSettings):
