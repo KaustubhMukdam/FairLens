@@ -5,97 +5,107 @@ interface ChatPanelProps {
   auditId: string;
 }
 
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+const SUGGESTED_QUESTIONS = [
+  'How can I mitigate race proxy bias?',
+  'Which group is most affected by this model?',
+  'What are the top remediation steps I should take?',
+];
+
 export const ChatPanel = ({ auditId }: ChatPanelProps) => {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const suggestedQuestions = [
-    'Which groups are most affected by unfairness in this model?',
-    'What are the main causes of the fairness issues detected?',
-    'What concrete steps can we take to address these fairness violations?',
-  ];
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!question.trim()) return;
-
-    setIsLoading(true);
-    setError(null);
+  const sendQuestion = async (q: string) => {
+    if (!q.trim() || loading) return;
+    const userMsg: Message = { role: 'user', content: q };
+    setMessages((prev) => [...prev, userMsg]);
+    setQuestion('');
+    setLoading(true);
 
     try {
-      const res = await apiClient.post(`/chat/${auditId}`, { question });
-      setAnswer(res.data.answer);
-      setQuestion('');
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to get response';
-      setError(errorMsg);
+      const response = await apiClient.post(`/chat/${auditId}`, { question: q });
+      const assistantMsg: Message = {
+        role: 'assistant',
+        content: response.data.answer || 'No response received.',
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: 'Unable to reach Gemini. Please try again.' },
+      ]);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleSuggestedQuestion = (q: string) => {
-    setQuestion(q);
-  };
-
   return (
-    <div className="bg-white rounded-lg p-6 border border-gray-200">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Ask Gemini About This Audit</h3>
-
-      <div className="space-y-4">
-        {!answer && (
-          <div className="space-y-2 mb-4">
-            <p className="text-sm text-gray-600">Suggested questions:</p>
-            <div className="flex flex-wrap gap-2">
-              {suggestedQuestions.map((q) => (
-                <button
-                  key={q}
-                  onClick={() => handleSuggestedQuestion(q)}
-                  className="text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1.5 rounded-full transition"
-                >
-                  {q}
-                </button>
-              ))}
+    <div className="mt-8 border-t border-indigo-100 pt-8">
+      {/* Chat history */}
+      {messages.length > 0 && (
+        <div className="space-y-4 mb-6 max-h-64 overflow-y-auto">
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                msg.role === 'user'
+                  ? 'bg-indigo-600 text-white rounded-br-sm'
+                  : 'bg-white text-indigo-900 border border-indigo-100 rounded-bl-sm shadow-sm'
+              }`}>
+                {msg.content}
+              </div>
             </div>
-          </div>
-        )}
+          ))}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-sm border border-indigo-100 shadow-sm flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <input
-            type="text"
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Ask a question about this audit..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            disabled={isLoading}
-          />
+      {/* Suggested questions */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <span className="text-[10px] font-bold text-indigo-400 py-2 uppercase tracking-widest">SUGGESTED:</span>
+        {SUGGESTED_QUESTIONS.map((q) => (
           <button
-            type="submit"
-            disabled={isLoading || !question.trim()}
-            className="p-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition disabled:opacity-50"
+            key={q}
+            onClick={() => sendQuestion(q)}
+            disabled={loading}
+            className="bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg text-xs font-medium text-indigo-700 transition-colors disabled:opacity-50"
           >
-            {isLoading ? '...' : '→'}
+            {q}
           </button>
-        </form>
+        ))}
+      </div>
 
-        {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</div>}
-
-        {answer && (
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm text-gray-700">{answer}</p>
-            <button
-              onClick={() => {
-                setAnswer('');
-                setQuestion('');
-              }}
-              className="mt-3 text-xs text-indigo-600 hover:text-indigo-700 font-semibold"
-            >
-              Ask another question
-            </button>
-          </div>
-        )}
+      {/* Input */}
+      <div className="relative">
+        <input
+          type="text"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && sendQuestion(question)}
+          placeholder="Ask Gemini about this audit…"
+          disabled={loading}
+          className="w-full bg-white border-none rounded-2xl py-4 pl-6 pr-16 focus:ring-4 focus:ring-indigo-100 placeholder-indigo-300 text-indigo-900 font-medium shadow-sm"
+        />
+        <button
+          onClick={() => sendQuestion(question)}
+          disabled={loading || !question.trim()}
+          className="absolute right-3 top-1/2 -translate-y-1/2 bg-indigo-600 text-white p-2 rounded-xl hover:scale-110 transition-transform disabled:opacity-50"
+        >
+          <span className="material-symbols-outlined">send</span>
+        </button>
       </div>
     </div>
   );

@@ -4,3 +4,13 @@ age,workclass,fnlwgt,education,education.num,marital.status,occupation,relations
 66,?,186061,Some-college,10,Widowed,?,Unmarried,Black,Female,0,4356,40,United-States,<=50K
 54,Private,140359,7th-8th,4,Divorced,Machine-op-inspct,Unmarried,White,Female,0,3900,40,United-States,<=50K
 41,Private,264663,Some-college,10,Separated,Prof-specialty,Own-child,White,Female,0,3900,40,United-States,<=50K
+37,Private,154374,Bachelors,13,Married-civ-spouse,Exec-managerial,Husband,White,Male,0,0,60,United-States,>50K
+29,Self-emp-not-inc,229797,HS-grad,9,Never-married,Sales,Not-in-family,Black,Male,0,0,50,United-States,<=50K
+52,Private,209642,Bachelors,13,Married-civ-spouse,Prof-specialty,Husband,White,Female,0,0,45,United-States,>50K
+44,Private,159449,Masters,14,Married-civ-spouse,Prof-specialty,Wife,Asian-Pac-Islander,Female,0,0,40,United-States,>50K
+33,Private,234721,HS-grad,9,Divorced,Craft-repair,Unmarried,Black,Male,0,0,40,United-States,<=50K
+48,State-gov,302146,Some-college,10,Separated,Adm-clerical,Own-child,White,Female,0,0,35,United-States,<=50K
+61,Private,155244,Doctorate,16,Married-civ-spouse,Prof-specialty,Husband,White,Male,15024,0,55,United-States,>50K
+26,Private,193010,Bachelors,13,Never-married,Tech-support,Not-in-family,Black,Female,0,0,40,United-States,<=50K
+57,Self-emp-inc,193130,HS-grad,9,Married-civ-spouse,Exec-managerial,Husband,White,Male,0,0,60,United-States,>50K
+35,Private,173375,Bachelors,13,Married-civ-spouse,Sales,Husband,White,Female,0,0,48,United-States,>50K

@@ -6,11 +6,22 @@ interface FairnessRadarProps {
 }
 
 export const FairnessRadar = ({ result }: FairnessRadarProps) => {
-  // Get severity color
+  // Design system colors
+  const colors = {
+    primary: '#3525cd',
+    secondary: '#58579b',
+    error: '#ba1a1a',
+    warning: '#f9ab00',
+    success: '#36a100',
+    surface: '#e2e2e9',
+    outline: '#c7c4d8',
+  };
+
+  // Get color based on severity
   const getSeverityColor = (value: number): string => {
-    if (value >= 80) return '#10b981'; // Green - excellent
-    if (value >= 60) return '#f59e0b'; // Amber - warning
-    return '#ef4444'; // Red - critical
+    if (value >= 80) return colors.success;      // Green - excellent
+    if (value >= 60) return colors.warning;      // Amber - warning
+    return colors.error;                          // Red - critical
   };
 
   // Extract metrics from fairness_metrics array
@@ -54,30 +65,30 @@ export const FairnessRadar = ({ result }: FairnessRadarProps) => {
   ];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className="card">
       <div className="mb-6">
-        <h3 className="text-lg font-bold text-gray-900">Fairness Overview</h3>
-        <p className="text-sm text-gray-600 mt-1">Five-metric fairness assessment summary</p>
+        <h3 className="title-md font-bold text-on-background">Fairness Dimensions</h3>
+        <p className="body-sm text-on-surface-variant mt-1">Five-metric assessment across fairness principles</p>
       </div>
 
       <ResponsiveContainer width="100%" height={400}>
         <RadarChart data={data} margin={{ top: 20, right: 20, bottom: 60, left: 20 }}>
-          <PolarGrid stroke="#e5e7eb" strokeDasharray="3 3" />
+          <PolarGrid stroke={colors.surface} strokeDasharray="3 3" />
           <PolarAngleAxis
             dataKey="metric"
-            tick={{ fontSize: 12, fill: '#6b7280' }}
+            tick={{ fontSize: 12, fill: '#464555' }}
             angle={90}
             orientation="outer"
           />
           <PolarRadiusAxis
             angle={90}
             domain={[0, 100]}
-            tick={{ fontSize: 11, fill: '#9ca3af' }}
+            tick={{ fontSize: 11, fill: '#464555' }}
           />
           <Radar
             name="Fairness Score"
             dataKey="value"
-            stroke="#4f46e5"
+            stroke={colors.primary}
             fill="#4f46e5"
             fillOpacity={0.2}
             isAnimationActive

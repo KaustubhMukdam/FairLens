@@ -10,31 +10,32 @@ function App() {
   const [columns, setColumns] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [fileId, setFileId] = useState<string>('');
 
-  // Step 3: If audit is in progress or complete, show the report
+  // Step 3: Audit in progress or complete → show report
   if (auditId) {
     return <AuditReport auditId={auditId} />;
   }
 
-  // Step 2: If file is uploaded but audit not started, show config form
+  // Step 2: File uploaded, show config form
   if (uploadedFile && columns.length > 0) {
     return (
       <AuditSetup
         columns={columns}
         fileName={uploadedFile.name}
-        onAuditStart={(id) => {
-          setAuditId(id);
-        }}
+        fileId={fileId}
+        onAuditStart={(id) => setAuditId(id)}
         onBack={() => {
           setUploadedFile(null);
           setColumns([]);
+          setFileId('');
           setError(null);
         }}
       />
     );
   }
 
-  // Helper: Parse CSV headers
   const parseCSVHeaders = async (file: File): Promise<string[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -42,8 +43,8 @@ function App() {
         try {
           const text = e.target?.result as string;
           const firstLine = text.split('\n')[0];
-          const headers = firstLine.split(',').map((h) => h.trim());
-          resolve(headers);
+          const headers = firstLine.split(',').map((h) => h.trim().replace(/^"|"$/g, ''));
+          resolve(headers.filter(Boolean));
         } catch (err) {
           reject(err);
         }
@@ -53,103 +54,153 @@ function App() {
     });
   };
 
-  // Handle file upload
   const handleFileUpload = async (file: File) => {
     setUploading(true);
     setError(null);
-
     try {
-      // Upload to backend
       const formData = new FormData();
       formData.append('file', file);
-
-      await apiClient.post('/upload/dataset', formData, {
+      const res = await apiClient.post('/upload/dataset', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-
-      // Parse headers
       const headers = await parseCSVHeaders(file);
       setUploadedFile(file);
       setColumns(headers);
+      setFileId(res.data.file_id);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to upload file';
-      setError(msg);
+      setError(err instanceof Error ? err.message : 'Failed to upload file');
     } finally {
       setUploading(false);
     }
   };
 
-  // Step 1: Show landing page with upload and demo options
+  // Step 1: Landing page — Sovereign Auditor design
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-indigo-600">• FAIRLENS</h1>
-          <nav className="flex items-center gap-8">
-            <a href="#" className="text-gray-700 hover:text-gray-900 font-medium">
-              How it works
-            </a>
-            <a href="#" className="text-gray-700 hover:text-gray-900 font-medium">
-              Methodology
-            </a>
-            <a href="#" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-gray-900 font-medium">
-              GitHub
-            </a>
-          </nav>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="max-w-6xl mx-auto px-6 py-16 text-center">
-        <p className="text-sm font-semibold text-indigo-600 mb-4">SOVEREIGN AI AUDITING</p>
-        <h2 className="text-5xl font-bold text-gray-900 mb-4">
-          Detect AI Bias <span className="text-indigo-600">Before It Harms People</span>
-        </h2>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-          Upload a dataset or model predictions. Get a full fairness audit powered by Google Gemini in under 60 seconds.
-        </p>
-
-        {error && (
-          <div className="max-w-2xl mx-auto mb-8 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
+    <div className="min-h-screen bg-background text-on-background">
+      {/* ── TopNavBar ── */}
+      <nav className="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl">
+        <div className="flex justify-between items-center px-8 py-4 max-w-[1440px] mx-auto tracking-tight leading-snug">
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+            <span className="text-xl font-black tracking-tighter text-indigo-700 uppercase">FairLens</span>
           </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12">
-          {/* Upload Zone */}
-          <div className="bg-white rounded-lg border-2 border-dashed border-gray-300 p-12 text-center hover:border-indigo-500 transition">
-            <div className="text-4xl mb-4">📄</div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Drop your CSV here</h3>
-            <p className="text-gray-600 mb-6">Or click to browse your computer</p>
-            <input
-              type="file"
-              accept=".csv"
-              className="hidden"
-              id="file-input"
-              onChange={(e) => {
-                const file = e.currentTarget.files?.[0];
-                if (file) {
-                  handleFileUpload(file);
-                }
-              }}
-              disabled={uploading}
-            />
-            <label
-              htmlFor="file-input"
-              className="inline-block px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold cursor-pointer transition disabled:opacity-50"
+          <div className="hidden md:flex items-center gap-8">
+            <a className="text-indigo-700 font-semibold border-b-2 border-indigo-600 py-1 transition-colors" href="#how">How it works</a>
+            <a className="text-slate-500 hover:text-indigo-600 transition-colors" href="#methodology">Methodology</a>
+            <a className="text-slate-500 hover:text-indigo-600 transition-colors" href="#docs">Documentation</a>
+            <a className="text-slate-500 hover:text-indigo-600 transition-colors" href="https://github.com" target="_blank" rel="noreferrer">GitHub</a>
+          </div>
+          <div className="flex items-center gap-4">
+            <button className="text-slate-500 hover:text-indigo-600 font-medium px-4 py-2 transition-all">Sign In</button>
+            <button
+              className="bg-primary-container text-on-primary-container px-6 py-2.5 rounded-full font-bold hover:bg-primary hover:text-white transition-all shadow-sm"
+              onClick={() => document.getElementById('upload-input')?.click()}
             >
-              {uploading ? '⏳ Uploading...' : 'Choose File'}
-            </label>
-            <p className="text-xs text-gray-500 mt-6">CSV format • Max 500MB</p>
+              Get Started
+            </button>
           </div>
+        </div>
+      </nav>
 
-          {/* Demo Scenarios */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-bold text-gray-900 text-left mb-4">Interactive Demo</h3>
+      <main className="pt-32 pb-24 px-8 max-w-[1440px] mx-auto">
+        {/* ── Hero ── */}
+        <header className="mb-24 flex flex-col items-center text-center max-w-4xl mx-auto">
+          <span className="label-sm font-medium tracking-widest uppercase text-primary mb-6 bg-primary-fixed px-4 py-1 rounded-full">
+            Sovereign AI Auditing
+          </span>
+          <h1 className="display-lg font-extrabold leading-[1.1] tracking-tighter text-on-background mb-8">
+            Detect AI Bias Before It{' '}
+            <span className="text-primary italic">Harms People</span>
+          </h1>
+          <p className="text-lg text-on-surface-variant leading-relaxed mb-10 max-w-2xl">
+            Upload a dataset or model predictions. Get a full fairness audit powered by Google Gemini in under 60 seconds.
+          </p>
+          <div className="flex gap-4">
+            <label htmlFor="upload-input" className="btn btn-primary flex items-center gap-2 cursor-pointer">
+              <span>Start Free Audit</span>
+              <span className="material-symbols-outlined">arrow_forward</span>
+            </label>
+            <button className="btn btn-secondary">View Methodology</button>
+          </div>
+        </header>
+
+        {/* ── Main Canvas ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          {/* Left: Drop Zone */}
+          <section className="lg:col-span-7">
+            <div
+              className={`bg-surface-container-lowest rounded-xl flex flex-col items-center justify-center p-12 border-2 border-dashed relative overflow-hidden group cursor-pointer transition-all min-h-[500px] ${
+                dragOver
+                  ? 'border-primary bg-primary-fixed/20'
+                  : 'border-outline-variant hover:border-primary-fixed-dim hover:bg-surface-container-low'
+              }`}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                const file = e.dataTransfer.files[0];
+                if (file) handleFileUpload(file);
+              }}
+              onClick={() => document.getElementById('upload-input')?.click()}
+            >
+              {/* Ghost blobs */}
+              <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                <div className="absolute -top-20 -right-20 w-64 h-64 bg-primary-fixed blur-3xl rounded-full" />
+                <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-secondary-container blur-3xl rounded-full" />
+              </div>
+
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="w-20 h-20 rounded-2xl bg-primary-fixed flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <span className="material-symbols-outlined text-primary" style={{ fontSize: '2.5rem' }}>upload_file</span>
+                </div>
+                <h3 className="text-2xl font-bold mb-3 text-on-background">Drop your CSV here</h3>
+                <p className="text-on-surface-variant mb-8 font-medium">Or click to browse your computer</p>
+
+                {uploading ? (
+                  <div className="flex items-center gap-3 text-primary font-semibold">
+                    <span className="material-symbols-outlined animate-clinical-spin">sync</span>
+                    Uploading…
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap justify-center gap-3">
+                    {['CSV & JSON', 'Parquet', 'Max 500MB'].map((tag) => (
+                      <div key={tag} className="flex items-center gap-2 px-3 py-1.5 bg-surface-container rounded-lg label-sm text-on-surface-variant">
+                        <span className="material-symbols-outlined text-sm">check_circle</span>
+                        {tag}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {error && (
+                  <p className="mt-4 text-sm text-error font-medium">{error}</p>
+                )}
+              </div>
+
+              <input
+                id="upload-input"
+                type="file"
+                accept=".csv,.json,.parquet"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }}
+                disabled={uploading}
+              />
+            </div>
+          </section>
+
+          {/* Right: Demo Cards */}
+          <section className="lg:col-span-5 flex flex-col gap-6">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="headline-md font-bold text-on-background">Interactive Demo</h2>
+              <span className="label-sm text-outline tracking-widest font-bold">SELECT SCENARIO</span>
+            </div>
 
             <DemoCard
-              icon="👤"
+              icon="person_search"
+              iconBg="bg-secondary-container"
+              iconText="text-on-secondary-container"
+              intentClass="intent-bar-secondary"
               title="Hiring Model"
               description="UCI Adult Income dataset — gender & race bias"
               fileName="adult_income_sample.csv"
@@ -158,7 +209,10 @@ function App() {
             />
 
             <DemoCard
-              icon="🏦"
+              icon="account_balance"
+              iconBg="bg-primary-fixed"
+              iconText="text-primary"
+              intentClass="intent-bar-primary"
               title="Lending Model"
               description="German Credit dataset — age & sex bias"
               fileName="german_credit_sample.csv"
@@ -167,29 +221,62 @@ function App() {
             />
 
             <DemoCard
-              icon="⚖️"
+              icon="gavel"
+              iconBg="bg-tertiary-fixed"
+              iconText="text-on-surface-variant"
+              intentClass="intent-bar-secondary"
               title="Criminal Justice"
               description="COMPAS dataset — racial bias in recidivism"
               fileName="compas_sample.csv"
               onRun={handleFileUpload}
               disabled={uploading}
             />
-          </div>
-        </div>
-      </section>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-200 bg-gray-50 mt-16">
-        <div className="max-w-6xl mx-auto px-6 py-8 text-center text-gray-600 text-sm">
-          <p>© 2024 FairLens AI. Sovereign Auditor Protocol.</p>
+            {/* Gemini Badge */}
+            <div className="mt-2 p-5 rounded-xl bg-primary-fixed/30 border border-primary-fixed flex items-center gap-4">
+              <span className="material-symbols-outlined text-primary filled">auto_awesome</span>
+              <p className="text-sm text-on-secondary-fixed-variant leading-snug">
+                <strong>Gemini 2.5 Pro Enabled:</strong> Context-aware bias detection for high-stakes enterprise decisions.
+              </p>
+            </div>
+          </section>
+        </div>
+
+        {/* ── Trust Bar ── */}
+        <section className="mt-32 pt-16 border-t border-surface-container">
+          <p className="text-center label-sm font-bold tracking-widest text-outline mb-10">TRUSTED BY SOVEREIGN AUDIT TEAMS</p>
+          <div className="flex flex-wrap justify-center items-center gap-16 opacity-40 grayscale">
+            {['FINTECH', 'DATA_GOV', 'AI_WATCH', 'SECURE_LABS'].map((name) => (
+              <span key={name} className="text-2xl font-black italic tracking-tighter">{name}</span>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      {/* ── Footer ── */}
+      <footer className="bg-slate-50 border-t border-slate-200">
+        <div className="flex flex-col md:flex-row justify-between items-center px-12 py-8 max-w-[1440px] mx-auto">
+          <div className="flex items-center gap-6 mb-6 md:mb-0">
+            <span className="font-bold text-slate-700">FairLens AI</span>
+            <span className="body-md text-slate-500">© 2024 FairLens AI. Sovereign Auditor Protocol.</span>
+          </div>
+          <div className="flex gap-8">
+            <a className="text-slate-400 hover:text-slate-600 transition-all" href="#">Privacy Policy</a>
+            <a className="text-slate-400 hover:text-slate-600 transition-all" href="#">Terms of Service</a>
+            <a className="text-slate-400 hover:text-slate-600 transition-all" href="#">Security Audit</a>
+          </div>
         </div>
       </footer>
     </div>
   );
 }
 
+/* ── Demo Card Component ── */
 interface DemoCardProps {
   icon: string;
+  iconBg: string;
+  iconText: string;
+  intentClass: string;
   title: string;
   description: string;
   fileName: string;
@@ -197,8 +284,9 @@ interface DemoCardProps {
   disabled: boolean;
 }
 
-function DemoCard({ icon, title, description, fileName, onRun, disabled }: DemoCardProps) {
+function DemoCard({ icon, iconBg, iconText, intentClass, title, description, fileName, onRun, disabled }: DemoCardProps) {
   const handleClick = async () => {
+    if (disabled) return;
     try {
       const response = await fetch(`/fixtures/${fileName}`);
       if (!response.ok) throw new Error('Failed to load demo file');
@@ -211,20 +299,28 @@ function DemoCard({ icon, title, description, fileName, onRun, disabled }: DemoC
   };
 
   return (
-    <button
+    <div
+      className={`bg-surface-container-lowest rounded-xl p-6 intent-bar ${intentClass} transition-all hover:translate-x-1 duration-150 group cursor-pointer`}
       onClick={handleClick}
-      disabled={disabled}
-      className="w-full bg-white rounded-lg p-4 border border-gray-200 hover:border-indigo-300 hover:shadow-md transition cursor-pointer disabled:opacity-50 text-left"
     >
-      <div className="text-2xl mb-2">{icon}</div>
-      <h4 className="font-bold text-gray-900">{title}</h4>
-      <p className="text-sm text-gray-600 my-2">{description}</p>
-      <span className="text-indigo-600 hover:text-indigo-700 font-semibold text-sm">
-        {disabled ? '⏳ Loading...' : 'Run Demo →'}
-      </span>
-    </button>
+      <div className="flex items-start gap-5">
+        <div className={`w-12 h-12 flex-shrink-0 rounded-lg ${iconBg} flex items-center justify-center`}>
+          <span className={`material-symbols-outlined ${iconText}`}>{icon}</span>
+        </div>
+        <div className="flex-grow">
+          <h4 className="title-sm font-bold text-on-background mb-1">{title}</h4>
+          <p className="body-md text-on-surface-variant mb-4">{description}</p>
+          <button
+            className="text-primary font-bold text-sm flex items-center gap-1 group-hover:gap-2 transition-all disabled:opacity-50"
+            disabled={disabled}
+          >
+            {disabled ? 'Loading…' : 'Run Demo'}
+            <span className="material-symbols-outlined text-lg">arrow_right_alt</span>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
 export default App;
-

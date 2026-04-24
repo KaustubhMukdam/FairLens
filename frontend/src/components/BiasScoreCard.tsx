@@ -1,11 +1,32 @@
 interface BiasScoreCardProps {
   metricName: string;
   value: number;
-  severity: 'GREEN' | 'AMBER' | 'RED';
+  severity: 'RED' | 'AMBER' | 'GREEN';
   threshold: string;
   description: string;
   affectedGroups: string[];
 }
+
+const SEVERITY_CONFIG = {
+  RED: {
+    bar: 'bg-error',
+    badge: 'bg-error-container text-on-error-container',
+    border: 'border-error',
+    label: 'FAIL',
+  },
+  AMBER: {
+    bar: 'bg-yellow-400',
+    badge: 'bg-yellow-100 text-yellow-800',
+    border: 'border-yellow-400',
+    label: 'AMBER',
+  },
+  GREEN: {
+    bar: 'bg-primary',
+    badge: 'bg-primary-container text-on-primary-container',
+    border: 'border-primary',
+    label: 'PASS',
+  },
+};
 
 export const BiasScoreCard = ({
   metricName,
@@ -15,54 +36,43 @@ export const BiasScoreCard = ({
   description,
   affectedGroups,
 }: BiasScoreCardProps) => {
-  const severityColors = {
-    GREEN: { bg: 'bg-green-50', text: 'text-green-700', badge: 'bg-green-200 text-green-900' },
-    AMBER: { bg: 'bg-amber-50', text: 'text-amber-700', badge: 'bg-amber-200 text-amber-900' },
-    RED: { bg: 'bg-red-50', text: 'text-red-700', badge: 'bg-red-200 text-red-900' },
-  };
-
-  const colors = severityColors[severity];
+  const cfg = SEVERITY_CONFIG[severity] ?? SEVERITY_CONFIG.RED;
+  // Normalize value to % for bar (clamp 0–1)
+  const barWidth = Math.min(100, Math.max(0, Math.abs(value) * 100));
 
   return (
-    <div className={`rounded-lg p-6 border border-gray-200 ${colors.bg}`}>
-      <div className="flex items-start justify-between mb-4">
+    <div className={`bg-surface-container-lowest rounded-xl p-6 border-l-4 ${cfg.border} relative overflow-hidden`}>
+      <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">{metricName}</h3>
-          <p className="text-xs text-gray-600 mt-1">{description}</p>
+          <h4 className="font-bold text-slate-900">{metricName}</h4>
+          <p className="text-xs text-slate-500 mt-1">{description}</p>
         </div>
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded ${colors.badge}`}>
-          {severity === 'GREEN' ? 'PASS' : severity === 'AMBER' ? 'WARN' : 'FAIL'}
+        <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${cfg.badge}`}>
+          {cfg.label}
+        </div>
+      </div>
+
+      <div className="flex items-end gap-3 mb-4">
+        <span className="text-3xl font-black text-on-surface tracking-tighter">
+          {Number.isFinite(value) ? value.toFixed(3) : 'N/A'}
         </span>
+        <span className="text-xs text-slate-400 mb-1">vs {threshold} target</span>
       </div>
 
-      <div className={`text-3xl font-bold ${colors.text} mb-3`}>{value.toFixed(3)}</div>
-
-      <div className="mb-4">
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className={`h-2 rounded-full ${
-              severity === 'GREEN'
-                ? 'bg-green-500'
-                : severity === 'AMBER'
-                  ? 'bg-amber-500'
-                  : 'bg-red-500'
-            }`}
-            style={{ width: `${Math.min((value / 1) * 100, 100)}%` }}
-          />
-        </div>
-        <p className="text-xs text-gray-600 mt-1">Threshold: {threshold}</p>
+      <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+        <div
+          className={`h-full ${cfg.bar} transition-all duration-500 rounded-full`}
+          style={{ width: `${barWidth}%` }}
+        />
       </div>
 
-      {affectedGroups.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold text-gray-700 mb-2">Affected groups:</p>
-          <div className="flex flex-wrap gap-2">
-            {affectedGroups.map((group) => (
-              <span key={group} className="text-xs bg-white px-2 py-1 rounded-full border border-gray-300">
-                {group}
-              </span>
-            ))}
-          </div>
+      {affectedGroups?.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1">
+          {affectedGroups.slice(0, 3).map((g) => (
+            <span key={g} className="text-[10px] bg-surface-container px-2 py-0.5 rounded-full text-on-surface-variant font-medium">
+              {g}
+            </span>
+          ))}
         </div>
       )}
     </div>

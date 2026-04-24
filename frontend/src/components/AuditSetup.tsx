@@ -5,35 +5,29 @@ import { apiClient } from '../api/client';
 interface AuditSetupProps {
   columns: string[];
   fileName: string;
+  fileId: string;
   onAuditStart: (auditId: string) => void;
   onBack: () => void;
 }
 
-type DomainContext = 'hiring' | 'lending' | 'healthcare' | 'other';
+type DomainContext = 'hiring' | 'lending' | 'healthcare' | 'criminal_justice' | 'other';
 
-export const AuditSetup = ({
-  columns,
-  fileName,
-  onAuditStart,
-  onBack,
-}: AuditSetupProps) => {
+const DOMAINS: { value: DomainContext; label: string }[] = [
+  { value: 'hiring', label: 'Hiring' },
+  { value: 'lending', label: 'Lending' },
+  { value: 'healthcare', label: 'Healthcare' },
+  { value: 'other', label: 'Other' },
+];
+
+export const AuditSetup = ({ columns, fileName, fileId, onAuditStart, onBack }: AuditSetupProps) => {
   const { setAuditId } = useAuditStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Form state
   const [targetCol, setTargetCol] = useState('');
   const [predictionCol, setPredictionCol] = useState('');
   const [protectedAttrs, setProtectedAttrs] = useState<string[]>([]);
-  const [domain, setDomain] = useState<DomainContext>('other');
   const [attrDropdown, setAttrDropdown] = useState('');
-
-  const domains: { value: DomainContext; label: string; icon: string }[] = [
-    { value: 'hiring', label: 'Hiring', icon: '👤' },
-    { value: 'lending', label: 'Lending', icon: '🏦' },
-    { value: 'healthcare', label: 'Healthcare', icon: '⚕️' },
-    { value: 'other', label: 'Other', icon: '⚙️' },
-  ];
+  const [domain, setDomain] = useState<DomainContext>('hiring');
 
   const addAttribute = (attr: string) => {
     if (attr && !protectedAttrs.includes(attr)) {
@@ -42,188 +36,178 @@ export const AuditSetup = ({
     }
   };
 
-  const removeAttribute = (attr: string) => {
+  const removeAttribute = (attr: string) =>
     setProtectedAttrs(protectedAttrs.filter((a) => a !== attr));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!targetCol) { setError('Target Column is required'); return; }
+    if (protectedAttrs.length === 0) { setError('Select at least one Protected Attribute'); return; }
+
     setLoading(true);
-
-    // Validation
-    if (!targetCol) {
-      setError('Target Column is required');
-      setLoading(false);
-      return;
-    }
-    if (protectedAttrs.length === 0) {
-      setError('Select at least one Protected Attribute');
-      setLoading(false);
-      return;
-    }
-
     try {
-      // POST /audit/run to backend
       const response = await apiClient.post('/audit/run', {
+        file_id: fileId,
         target_column: targetCol,
-        prediction_column: predictionCol || null,
+        prediction_column: predictionCol || undefined,
         protected_attributes: protectedAttrs,
         domain_context: domain,
       });
-
       const { audit_id } = response.data;
       setAuditId(audit_id);
       onAuditStart(audit_id);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to start audit';
-      setError(msg);
+      setError(err instanceof Error ? err.message : 'Failed to start audit');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Configure Audit</h1>
-          <p className="text-gray-600">
-            {fileName} • {columns.length} columns detected
-          </p>
-        </div>
-
-        {/* Step Indicator */}
-        <div className="flex justify-center gap-8 mb-8">
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center font-bold">
-              ✓
-            </div>
-            <span className="text-xs text-gray-600 mt-2">Upload</span>
+    <div className="min-h-screen bg-background text-on-background flex flex-col">
+      {/* ── TopNavBar ── */}
+      <nav className="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl">
+        <div className="flex justify-between items-center px-8 py-4 max-w-[1440px] mx-auto left-0 right-0">
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+            <span className="text-xl font-black tracking-tighter text-indigo-700 uppercase">FairLens</span>
           </div>
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold">
-              2
-            </div>
-            <span className="text-xs text-indigo-600 font-semibold">Configure</span>
+          <div className="hidden md:flex gap-x-8 items-center">
+            <a className="text-slate-500 hover:text-indigo-600 tracking-tight leading-snug" href="#">Platform</a>
+            <a className="text-slate-500 hover:text-indigo-600 tracking-tight leading-snug" href="#">Methodology</a>
+            <a className="text-slate-500 hover:text-indigo-600 tracking-tight leading-snug" href="#">Documentation</a>
           </div>
-          <div className="flex flex-col items-center">
-            <div className="w-10 h-10 rounded-full bg-gray-300 text-gray-700 flex items-center justify-center font-bold">
-              3
-            </div>
-            <span className="text-xs text-gray-600 mt-2">Run</span>
+          <div className="flex gap-x-4">
+            <button onClick={onBack} className="text-slate-500 hover:text-indigo-600 px-4 py-2 text-sm font-medium">← Back</button>
+            <button className="bg-primary text-white px-6 py-2 rounded-full font-semibold hover:opacity-90 transition-all shadow-lg shadow-indigo-500/20 text-sm">Get Started</button>
           </div>
         </div>
+      </nav>
 
-        {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
+      <main className="flex-grow flex items-center justify-center pt-24 pb-12 px-6">
+        {/* ── Wizard Card ── */}
+        <div className="w-full max-w-[600px] bg-surface-container-lowest rounded-xl p-8 md:p-12 shadow-clinical relative overflow-hidden">
+
+          {/* Left primary intent bar */}
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl" />
+
+          {/* ── Step Indicator ── */}
+          <div className="flex justify-between items-center mb-12 relative">
+            <div className="absolute top-1/2 left-0 w-full h-[1px] bg-surface-container-highest -z-0" />
+            {/* Step 1 — done */}
+            <div className="relative z-10 flex flex-col items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-surface-container-highest border-2 border-surface-container-highest flex items-center justify-center">
+                <span className="material-symbols-outlined text-sm text-outline">check</span>
+              </div>
+              <span className="text-[10px] font-bold tracking-widest uppercase text-outline">Upload</span>
+            </div>
+            {/* Step 2 — active */}
+            <div className="relative z-10 flex flex-col items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary border-4 border-primary-fixed flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-white" />
+              </div>
+              <span className="text-[10px] font-bold tracking-widest uppercase text-primary">Configure</span>
+            </div>
+            {/* Step 3 — pending */}
+            <div className="relative z-10 flex flex-col items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-surface-container-lowest border-2 border-surface-container-highest flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-surface-container-highest" />
+              </div>
+              <span className="text-[10px] font-bold tracking-widest uppercase text-outline">Run</span>
+            </div>
+          </div>
+
+          {/* Header */}
+          <div className="space-y-1 mb-8">
+            <h1 className="text-2xl font-bold tracking-tight text-on-background">Configure Your Audit</h1>
+            <p className="text-sm text-on-surface-variant">Define the structural parameters for the fairness engine.</p>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {error}
+              <div className="bg-error-container border border-error/20 rounded-lg p-4">
+                <p className="text-on-error-container text-sm font-medium">{error}</p>
               </div>
             )}
 
             {/* Target Column */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Target Column <span className="text-red-500">*</span>
+            <div className="space-y-2">
+              <label className="block text-[11px] font-bold tracking-wider uppercase text-on-surface-variant">
+                Target Column
               </label>
-              <select
-                value={targetCol}
-                onChange={(e) => setTargetCol(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                <option value="">Select the target column...</option>
-                {columns.map((col) => (
-                  <option key={col} value={col}>
-                    {col}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">The column you want to audit for bias</p>
+              <div className="relative">
+                <select
+                  value={targetCol}
+                  onChange={(e) => setTargetCol(e.target.value)}
+                  className="w-full bg-surface-container-highest border-none rounded-lg py-3 px-4 text-sm focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
+                >
+                  <option value="">Select target column…</option>
+                  {columns.map((col) => <option key={col} value={col}>{col}</option>)}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+                  <span className="material-symbols-outlined text-outline">expand_more</span>
+                </div>
+              </div>
             </div>
 
             {/* Prediction Column */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Prediction Column (Optional)
+            <div className="space-y-2">
+              <label className="block text-[11px] font-bold tracking-wider uppercase text-on-surface-variant">
+                Prediction Column
               </label>
-              <select
+              <input
+                type="text"
                 value={predictionCol}
                 onChange={(e) => setPredictionCol(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                <option value="">Select prediction column...</option>
-                {columns.map((col) => (
-                  <option key={col} value={col}>
-                    {col}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Your model's output predictions (if available)
-              </p>
+                placeholder="Leave blank if no model predictions"
+                className="w-full bg-surface-container-highest border-none rounded-lg py-3 px-4 text-sm placeholder:text-outline/60 focus:ring-2 focus:ring-primary/20"
+              />
             </div>
 
             {/* Protected Attributes */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Protected Attributes <span className="text-red-500">*</span>
+            <div className="space-y-2">
+              <label className="block text-[11px] font-bold tracking-wider uppercase text-on-surface-variant">
+                Protected Attributes
               </label>
-              <div className="flex gap-2 mb-2">
-                <select
-                  value={attrDropdown}
-                  onChange={(e) => addAttribute(e.target.value)}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  <option value="">Add protected attribute...</option>
-                  {columns
-                    .filter((col) => !protectedAttrs.includes(col))
-                    .map((col) => (
-                      <option key={col} value={col}>
-                        {col}
-                      </option>
-                    ))}
-                </select>
-              </div>
-              {/* Tag Chips */}
-              <div className="flex flex-wrap gap-2">
+              <div className="min-h-[48px] bg-surface-container-highest rounded-lg p-2 flex flex-wrap gap-2 items-center">
                 {protectedAttrs.map((attr) => (
-                  <div
-                    key={attr}
-                    className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium flex items-center gap-2"
-                  >
+                  <div key={attr} className="flex items-center bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-xs font-medium">
                     {attr}
-                    <button
-                      type="button"
-                      onClick={() => removeAttribute(attr)}
-                      className="hover:text-indigo-900 font-bold"
-                    >
-                      ×
+                    <button type="button" onClick={() => removeAttribute(attr)} className="ml-1 hover:opacity-70">
+                      <span className="material-symbols-outlined text-[14px]">close</span>
                     </button>
                   </div>
                 ))}
+                <div className="relative flex-1 min-w-[100px]">
+                  <select
+                    value={attrDropdown}
+                    onChange={(e) => addAttribute(e.target.value)}
+                    className="w-full bg-transparent border-none text-sm py-1 focus:ring-0 appearance-none cursor-pointer text-outline"
+                  >
+                    <option value="">Add attribute…</option>
+                    {columns.filter((c) => !protectedAttrs.includes(c)).map((col) => (
+                      <option key={col} value={col}>{col}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              {protectedAttrs.length === 0 && (
-                <p className="text-xs text-amber-600 mt-2">Select at least one attribute</p>
-              )}
             </div>
 
-            {/* Domain Context */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-3">
-                Domain Context <span className="text-red-500">*</span>
+            {/* Domain Context — Radio Grid */}
+            <div className="space-y-3">
+              <label className="block text-[11px] font-bold tracking-wider uppercase text-on-surface-variant">
+                Domain Context
               </label>
-              <div className="grid grid-cols-2 gap-3">
-                {domains.map((d) => (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {DOMAINS.map((d) => (
                   <label
                     key={d.value}
-                    className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition ${
+                    className={`flex items-center justify-center p-3 rounded-lg cursor-pointer transition-all ${
                       domain === d.value
-                        ? 'border-indigo-600 bg-indigo-50'
-                        : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                        ? 'bg-primary-fixed border-2 border-primary/20'
+                        : 'bg-surface-container border-2 border-transparent hover:bg-surface-container-high'
                     }`}
                   >
                     <input
@@ -231,47 +215,44 @@ export const AuditSetup = ({
                       name="domain"
                       value={d.value}
                       checked={domain === d.value}
-                      onChange={(e) => setDomain(e.target.value as DomainContext)}
-                      className="w-4 h-4 text-indigo-600"
+                      onChange={() => setDomain(d.value)}
+                      className="hidden"
                     />
-                    <span className="ml-3 flex items-center gap-2">
-                      <span className="text-lg">{d.icon}</span>
-                      <span className="font-medium text-gray-900">{d.label}</span>
-                    </span>
+                    <span className="text-xs font-semibold">{d.label}</span>
                   </label>
                 ))}
               </div>
             </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading || !targetCol || protectedAttrs.length === 0}
-              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition disabled:opacity-50 text-lg"
-            >
-              {loading ? '⏳ Starting Audit...' : '▶️ Run Fairness Audit →'}
-            </button>
-
-            {/* Back Button */}
-            <button
-              type="button"
-              onClick={onBack}
-              className="w-full py-2 text-gray-600 hover:text-gray-900 font-medium text-sm"
-            >
-              ← Back to Upload
-            </button>
+            {/* Submit */}
+            <div className="pt-6">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-primary to-primary-container text-white py-4 rounded-full font-bold text-sm tracking-wide shadow-xl shadow-indigo-500/30 flex items-center justify-center gap-2 hover:-translate-y-px transition-all active:scale-95 disabled:opacity-60"
+              >
+                {loading ? 'Starting Audit…' : 'Run Fairness Audit'}
+                {!loading && <span className="material-symbols-outlined text-lg">arrow_forward</span>}
+              </button>
+              <div className="mt-4 text-center">
+                <p className="text-[10px] text-outline font-medium tracking-tight">
+                  Using 3 public demo datasets. No PII stored.
+                </p>
+              </div>
+            </div>
           </form>
         </div>
+      </main>
 
-        {/* Disclaimer */}
-        <div className="text-center text-xs text-gray-500 space-y-1">
-          <p>
-            💡 <strong>What is a fairness audit?</strong> We analyze your model's predictions
-            across demographic groups to detect and quantify bias.
-          </p>
-          <p>Your data never leaves your organization — all processing is done on your backend.</p>
+      {/* ── Footer ── */}
+      <footer className="w-full bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center px-12 py-8">
+        <div className="font-bold text-slate-700 mb-4 md:mb-0">© 2024 FairLens AI. Sovereign Auditor Protocol.</div>
+        <div className="flex gap-x-8">
+          <a className="text-slate-400 hover:text-slate-600 body-md" href="#">Privacy Policy</a>
+          <a className="text-slate-400 hover:text-slate-600 body-md" href="#">Terms of Service</a>
+          <a className="text-slate-400 hover:text-slate-600 body-md" href="#">Security Audit</a>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };

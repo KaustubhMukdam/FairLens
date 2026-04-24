@@ -81,8 +81,10 @@ def _run_audit_pipeline(
         validate_columns(df, required_cols)
         
         # Step 4: Basic data quality checks
-        if len(df) < 10:
-            raise ValueError("Dataset must have at least 10 rows")
+        if len(df) < settings.min_audit_rows:
+            raise ValueError(
+                f"Dataset must have at least {settings.min_audit_rows} rows"
+            )
         
         if df[target_column].nunique() > 2:
             raise ValueError("Target column must be binary classification")
@@ -372,10 +374,39 @@ async def get_audit_result(audit_id: str):
         )
     
     if status == AuditStatus.FAILED.value:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Audit failed: {audit.get('error_message', 'Unknown error')}"
-        )
+        return {
+            "audit_id": audit_id,
+            "status": AuditStatus.FAILED.value,
+            "file_id": audit.get("file_id", ""),
+            "filename": audit.get("filename") or audit.get("file_id", ""),
+            "target_column": audit.get("target_column", ""),
+            "protected_attributes": audit.get("protected_attributes", []),
+            "dataset_info": audit.get("dataset_info") or {
+                "missing_values": {},
+                "class_imbalance_ratio": 0,
+                "target_distribution": {},
+                "protected_groups_stats": {}
+            },
+            "fairness_metrics": audit.get("fairness_metrics") or [],
+            "shap_results": audit.get("shap_results") or {
+                "top_features": [],
+                "protected_attr_in_top_k": False,
+                "protected_attrs_found": []
+            },
+            "narrative": audit.get("narrative") or {
+                "summary": "",
+                "severity_rating": "LOW",
+                "affected_groups": [],
+                "root_cause_analysis": "",
+                "remediation_steps": [],
+                "plain_english_explanation": ""
+            },
+            "progress_pct": audit.get("progress_pct", 0),
+            "current_step": audit.get("current_step", "failed"),
+            "error_message": audit.get("error_message", "Unknown error"),
+            "created_at": audit.get("created_at"),
+            "completed_at": audit.get("completed_at")
+        }
     
     # Return complete results
     results = audit.get("results", {})

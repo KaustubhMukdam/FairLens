@@ -16,10 +16,18 @@ interface GroupDistributionChartProps {
 }
 
 export const GroupDistributionChart = ({ protectedGroupsStats }: GroupDistributionChartProps) => {
+  // Design system colors
+  const colors = {
+    primary: '#3525cd',
+    surface: '#e2e2e9',
+    outline: '#c7c4d8',
+    text: '#464555',
+  };
+
   // Extract first protected attribute's distribution
   const firstAttr = Object.keys(protectedGroupsStats)[0];
   if (!firstAttr) {
-    return <div className="text-gray-500 text-sm">No group data available</div>;
+    return <div className="body-sm text-on-surface-variant">No group data available</div>;
   }
 
   const groupData = protectedGroupsStats[firstAttr]?.target_distribution_by_group || {};
@@ -31,23 +39,34 @@ export const GroupDistributionChart = ({ protectedGroupsStats }: GroupDistributi
   }));
 
   return (
-    <div className="bg-white rounded-lg p-6 border border-gray-200">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Outcome Rate by Group ({firstAttr})</h3>
+    <div className="card">
+      <div className="mb-6">
+        <h3 className="title-md font-bold text-on-background">Outcome Rate by Group</h3>
+        <p className="body-sm text-on-surface-variant mt-1">Percentage of positive outcomes per protected group</p>
+      </div>
 
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis dataKey="group" tick={{ fontSize: 12 }} />
-          <YAxis label={{ value: 'Outcome Rate (%)', angle: -90, position: 'insideLeft' }} />
+          <CartesianGrid strokeDasharray="3 3" stroke={colors.surface} vertical={false} />
+          <XAxis dataKey="group" tick={{ fontSize: 11, fill: colors.text }} />
+          <YAxis
+            label={{ value: 'Outcome Rate (%)', angle: -90, position: 'insideLeft', fill: colors.text }}
+            tick={{ fontSize: 11, fill: colors.text }}
+          />
           <Tooltip
             formatter={(value) => `${(value as number).toFixed(1)}%`}
-            contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb' }}
+            contentStyle={{
+              backgroundColor: '#ffffff',
+              border: `1px solid ${colors.outline}`,
+              borderRadius: '0.5rem',
+            }}
+            labelStyle={{ color: colors.text }}
           />
-          <Bar dataKey="outcomeRate" fill="#4F46E5" radius={[8, 8, 0, 0]} />
+          <Bar dataKey="outcomeRate" fill={colors.primary} radius={[8, 8, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
 
-      <div className="mt-4 text-sm text-gray-600">
+      <div className="mt-4 body-sm text-on-surface-variant">
         <p>Positive outcome rates per group in the {firstAttr} protected attribute</p>
       </div>
     </div>

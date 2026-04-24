@@ -1,69 +1,59 @@
+interface Narrative {
+  summary?: string;
+  severity_rating?: string;
+  affected_groups?: string[];
+  root_cause_analysis?: string;
+  plain_english_explanation?: string;
+  remediation_steps?: string[];
+}
+
 interface NarrativeReportProps {
-  narrative: {
-    summary: string;
-    severity_rating: 'HIGH' | 'MEDIUM' | 'LOW';
-    affected_groups: string[];
-    root_cause_analysis: string;
-    remediation_steps: string[];
-    plain_english_explanation: string;
-  };
+  narrative: Narrative | null | undefined;
 }
 
 export const NarrativeReport = ({ narrative }: NarrativeReportProps) => {
-  const ratingColors = {
-    HIGH: 'bg-red-100 text-red-800 border-red-300',
-    MEDIUM: 'bg-amber-100 text-amber-800 border-amber-300',
-    LOW: 'bg-green-100 text-green-800 border-green-300',
-  };
+  if (!narrative) {
+    return (
+      <p className="body-md text-indigo-700/60 italic">
+        AI narrative is being generated…
+      </p>
+    );
+  }
 
   return (
-    <div className={`rounded-lg p-6 border ${ratingColors[narrative.severity_rating]}`}>
-      <div className="flex items-start justify-between mb-4">
-        <h3 className="text-lg font-semibold">✦ Gemini AI Report</h3>
-        <span className={`text-xs font-semibold px-3 py-1 rounded border ${ratingColors[narrative.severity_rating]}`}>
-          {narrative.severity_rating} SEVERITY
-        </span>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-10">
+      <div>
+        <h4 className="label-sm text-indigo-400 mb-4 tracking-[0.2em] font-black">SUMMARY</h4>
+        <p className="body-md text-indigo-950 font-medium leading-relaxed">
+          {narrative.plain_english_explanation || narrative.summary || 'Analysis in progress…'}
+        </p>
       </div>
-
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-sm font-semibold text-gray-900 mb-2">Summary</h4>
-          <p className="text-gray-700">{narrative.summary}</p>
+      <div>
+        <h4 className="label-sm text-indigo-400 mb-4 tracking-[0.2em] font-black">WHO IS AFFECTED</h4>
+        <div className="flex flex-wrap gap-2">
+          {narrative.affected_groups?.length ? (
+            narrative.affected_groups.map((group, i) => (
+              <span
+                key={i}
+                className="bg-white/80 px-4 py-2 rounded-full text-xs font-bold text-indigo-900 border border-indigo-100 shadow-sm flex items-center gap-2"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-error flex-shrink-0" />
+                {group}
+              </span>
+            ))
+          ) : (
+            <span className="text-sm text-indigo-700/60">No specific groups identified</span>
+          )}
         </div>
 
-        {narrative.affected_groups.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-2">Who Is Affected</h4>
-            <div className="flex flex-wrap gap-2">
-              {narrative.affected_groups.map((group) => (
-                <span key={group} className="text-sm bg-white bg-opacity-50 px-3 py-1 rounded-full border">
-                  {group}
-                </span>
-              ))}
-            </div>
+        {narrative.root_cause_analysis && (
+          <div className="mt-6">
+            <h4 className="label-sm text-indigo-400 mb-2 tracking-[0.2em] font-black">ROOT CAUSE</h4>
+            <p className="body-md text-indigo-950 font-medium leading-relaxed text-sm">
+              {narrative.root_cause_analysis}
+            </p>
           </div>
         )}
-
-        <div>
-          <h4 className="text-sm font-semibold text-gray-900 mb-2">Root Cause Analysis</h4>
-          <p className="text-gray-700 text-sm">{narrative.root_cause_analysis}</p>
-        </div>
-
-        <div>
-          <h4 className="text-sm font-semibold text-gray-900 mb-2">Recommended Actions</h4>
-          <ol className="list-decimal list-inside space-y-2">
-            {narrative.remediation_steps.map((step, idx) => (
-              <li key={idx} className="text-gray-700 text-sm">
-                {step}
-              </li>
-            ))}
-          </ol>
-        </div>
-
-        <div>
-          <h4 className="text-sm font-semibold text-gray-900 mb-2">Plain English Explanation</h4>
-          <p className="text-gray-700 text-sm italic">{narrative.plain_english_explanation}</p>
-        </div>
       </div>
     </div>
   );

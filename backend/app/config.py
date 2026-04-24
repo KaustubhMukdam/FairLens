@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     # App Settings
     backend_cors_origins: List[str] = ["http://localhost:5173", "https://fairlens.vercel.app"]
     max_upload_size_mb: int = 50
+    min_audit_rows: int = 3
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

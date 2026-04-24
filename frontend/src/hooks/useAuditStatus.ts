@@ -1,9 +1,14 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useAuditStore, type AuditResult } from '../store/auditStore';
 import { apiClient } from '../api/client';
 
 export const useAuditStatus = (auditId: string | null, onComplete?: (result: AuditResult) => void) => {
   const { setAuditResult, setLoading, setError } = useAuditStore();
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   const fetchStatus = useCallback(async () => {
     if (!auditId) return;
@@ -11,16 +16,56 @@ export const useAuditStatus = (auditId: string | null, onComplete?: (result: Aud
     try {
       // First, get status
       const statusRes = await apiClient.get(`/audit/${auditId}/status`);
-      const { status } = statusRes.data;
+      const { status, progress_pct, current_step, error_message } = statusRes.data;
+
+      if (status === 'FAILED') {
+        const failedResult: AuditResult = {
+          audit_id: auditId,
+          status: 'FAILED',
+          file_id: '',
+          filename: '',
+          target_column: '',
+          protected_attributes: [],
+          dataset_info: {
+            missing_values: {},
+            class_imbalance_ratio: 0,
+            target_distribution: {},
+            protected_groups_stats: {},
+          },
+          fairness_metrics: [],
+          shap_results: {
+            top_features: [],
+            protected_attr_in_top_k: false,
+            protected_attrs_found: [],
+          },
+          narrative: {
+            summary: '',
+            severity_rating: 'LOW',
+            affected_groups: [],
+            root_cause_analysis: '',
+            remediation_steps: [],
+            plain_english_explanation: '',
+          },
+          progress_pct: progress_pct ?? 0,
+          current_step: current_step ?? 'failed',
+          error_message: error_message ?? 'Audit failed',
+          created_at: null,
+          completed_at: null,
+        };
+
+        setAuditResult(failedResult);
+        setLoading(false);
+        return true;
+      }
 
       // If complete, fetch full results
-      if (status === 'COMPLETE' || status === 'FAILED') {
+      if (status === 'COMPLETE') {
         const resultRes = await apiClient.get(`/audit/${auditId}`);
         setAuditResult(resultRes.data);
         setLoading(false);
 
-        if (onComplete) {
-          onComplete(resultRes.data);
+        if (onCompleteRef.current) {
+          onCompleteRef.current(resultRes.data);
         }
 
         return true; // Signal to stop polling
@@ -33,7 +78,7 @@ export const useAuditStatus = (auditId: string | null, onComplete?: (result: Aud
       setLoading(false);
       return true; // Stop polling on error
     }
-  }, [auditId, setAuditResult, setLoading, setError, onComplete]);
+  }, [auditId, setAuditResult, setLoading, setError]);
 
   useEffect(() => {
     if (!auditId) return;
