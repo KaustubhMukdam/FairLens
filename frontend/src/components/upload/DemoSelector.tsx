@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api } from '../../api/client';
+import { apiClient } from '../../api/client';
 import { useAuditStore } from '../../store/auditStore';
 
 interface DemoSelectorProps {
@@ -54,7 +54,7 @@ export const DemoSelector = ({ onDemoStart }: DemoSelectorProps) => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const uploadRes = await api.post('/upload/dataset', formData, {
+      await apiClient.post('/upload/dataset', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -101,13 +101,6 @@ export const DemoSelector = ({ onDemoStart }: DemoSelectorProps) => {
       <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-xs text-indigo-700 mt-4">
         ⚡ Gemini 1.5 Pro Enabled: Context-aware bias detection for high-stakes enterprise decisions.
       </div>
-    </div>
-  );
-};
-          <h3 className="font-semibold text-lg text-gray-900 mb-2">{demo.title}</h3>
-          <p className="text-sm text-gray-500 text-center">{demo.desc}</p>
-        </button>
-      ))}
     </div>
   );
 };

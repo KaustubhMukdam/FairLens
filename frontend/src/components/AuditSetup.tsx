@@ -123,6 +123,7 @@ export const AuditSetup = ({ columns, fileName, fileId, onAuditStart, onBack }: 
           <div className="space-y-1 mb-8">
             <h1 className="text-2xl font-bold tracking-tight text-on-background">Configure Your Audit</h1>
             <p className="text-sm text-on-surface-variant">Define the structural parameters for the fairness engine.</p>
+            <p className="text-xs text-outline">Dataset: {fileName}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
