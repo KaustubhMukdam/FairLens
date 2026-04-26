@@ -88,7 +88,7 @@ function App() {
             <a className="text-indigo-700 font-semibold border-b-2 border-indigo-600 py-1 transition-colors" href="#how">How it works</a>
             <a className="text-slate-500 hover:text-indigo-600 transition-colors" href="#methodology">Methodology</a>
             <a className="text-slate-500 hover:text-indigo-600 transition-colors" href="#docs">Documentation</a>
-            <a className="text-slate-500 hover:text-indigo-600 transition-colors" href="https://github.com" target="_blank" rel="noreferrer">GitHub</a>
+            <a className="text-slate-500 hover:text-indigo-600 transition-colors" href="https://github.com/KaustubhMukdam/FairLens" target="_blank" rel="noreferrer">GitHub</a>
           </div>
           <div className="flex items-center gap-4">
             <button className="text-slate-500 hover:text-indigo-600 font-medium px-4 py-2 transition-all">Sign In</button>
@@ -104,7 +104,7 @@ function App() {
 
       <main className="pt-32 pb-24 px-8 max-w-[1440px] mx-auto">
         {/* ── Hero ── */}
-        <header className="mb-24 flex flex-col items-center text-center max-w-4xl mx-auto">
+        <header id="how" className="mb-24 flex flex-col items-center text-center max-w-4xl mx-auto scroll-mt-32">
           <span className="label-sm font-medium tracking-widest uppercase text-primary mb-6 bg-primary-fixed px-4 py-1 rounded-full">
             Sovereign AI Auditing
           </span>
@@ -120,7 +120,7 @@ function App() {
               <span>Start Free Audit</span>
               <span className="material-symbols-outlined">arrow_forward</span>
             </label>
-            <button className="btn btn-secondary">View Methodology</button>
+            <a className="btn btn-secondary" href="#methodology">View Methodology</a>
           </div>
         </header>
 
@@ -241,6 +241,65 @@ function App() {
             </div>
           </section>
         </div>
+
+        {/* ── Methodology ── */}
+        <section id="methodology" className="mt-24 scroll-mt-32">
+          <div className="rounded-2xl bg-white border border-slate-200 p-8 md:p-10">
+            <div className="max-w-4xl">
+              <p className="text-xs font-bold tracking-[0.2em] text-indigo-600 mb-3">METHODOLOGY</p>
+              <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 mb-5">How FairLens audits model fairness</h3>
+              <p className="text-slate-600 leading-relaxed mb-8">
+                FairLens runs a transparent fairness workflow over your uploaded dataset to identify disparate outcomes across sensitive groups.
+                The audit combines statistical checks with LLM-generated explanations so teams can move from detection to remediation quickly.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-xl border border-slate-200 p-5 bg-slate-50">
+                <p className="text-sm font-bold text-slate-900 mb-2">1. Data Validation</p>
+                <p className="text-sm text-slate-600">Checks schema, missing values, and target consistency before analysis begins.</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-5 bg-slate-50">
+                <p className="text-sm font-bold text-slate-900 mb-2">2. Fairness Metrics</p>
+                <p className="text-sm text-slate-600">Computes parity and performance gaps across protected groups for measurable bias signals.</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-5 bg-slate-50">
+                <p className="text-sm font-bold text-slate-900 mb-2">3. Risk Scoring</p>
+                <p className="text-sm text-slate-600">Assigns severity bands to findings so teams can prioritize what to fix first.</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-5 bg-slate-50">
+                <p className="text-sm font-bold text-slate-900 mb-2">4. Explainability Layer</p>
+                <p className="text-sm text-slate-600">Generates plain-language recommendations and mitigation ideas for stakeholders.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Documentation ── */}
+        <section id="docs" className="mt-16 scroll-mt-32">
+          <div className="rounded-2xl bg-slate-900 text-white p-8 md:p-10">
+            <p className="text-xs font-bold tracking-[0.2em] text-indigo-200 mb-3">DOCUMENTATION</p>
+            <h3 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-5">Build and integrate with confidence</h3>
+            <p className="text-slate-200 leading-relaxed mb-8 max-w-3xl">
+              Explore setup guides, API details, and architecture docs for deploying FairLens in research and production workflows.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <a href="https://github.com/KaustubhMukdam/FairLens#readme" target="_blank" rel="noreferrer" className="rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 p-5 transition-colors">
+                <p className="font-bold mb-1">Getting Started</p>
+                <p className="text-sm text-slate-200">Install dependencies and run frontend/backend locally.</p>
+              </a>
+              <a href="https://github.com/KaustubhMukdam/FairLens/tree/main/docs" target="_blank" rel="noreferrer" className="rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 p-5 transition-colors">
+                <p className="font-bold mb-1">Technical Docs</p>
+                <p className="text-sm text-slate-200">Read system design, testing, and implementation plans.</p>
+              </a>
+              <a href="https://github.com/KaustubhMukdam/FairLens" target="_blank" rel="noreferrer" className="rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 p-5 transition-colors">
+                <p className="font-bold mb-1">Source Code</p>
+                <p className="text-sm text-slate-200">Browse the repository, issues, and contribution history.</p>
+              </a>
+            </div>
+          </div>
+        </section>
 
         {/* ── Trust Bar ── */}
         <section className="mt-32 pt-16 border-t border-surface-container">
