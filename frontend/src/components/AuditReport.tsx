@@ -84,7 +84,7 @@ export const AuditReport = ({ auditId }: AuditReportProps) => {
 
       <div className="flex pt-16 min-h-screen">
         {/* ── Sidebar ── */}
-        <aside className="bg-slate-50 h-screen w-64 fixed left-0 flex flex-col py-8 gap-y-2 top-16 z-40">
+        <aside className="bg-slate-50 h-[calc(100vh-4rem)] w-64 fixed left-0 flex flex-col py-6 gap-y-2 top-16 z-40 overflow-y-auto">
           <div className="px-6 mb-8">
             <h2 className="text-lg font-bold text-slate-900">Audit Session</h2>
             <p className="text-xs text-slate-500 font-medium tracking-widest uppercase">
@@ -118,7 +118,7 @@ export const AuditReport = ({ auditId }: AuditReportProps) => {
             })}
           </nav>
 
-          <div className="px-6 mt-auto">
+          <div className="px-6 mt-auto pb-4 sticky bottom-0 bg-slate-50">
             <button
               onClick={() => window.location.reload()}
               className="w-full py-3 px-4 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:scale-[0.98] transition-all"

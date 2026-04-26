@@ -18,6 +18,45 @@ export const useAuditStatus = (auditId: string | null, onComplete?: (result: Aud
       const statusRes = await apiClient.get(`/audit/${auditId}/status`);
       const { status, progress_pct, current_step, error_message } = statusRes.data;
 
+      if (status === 'PENDING' || status === 'RUNNING') {
+        const runningResult: AuditResult = {
+          audit_id: auditId,
+          status,
+          file_id: '',
+          filename: '',
+          target_column: '',
+          protected_attributes: [],
+          dataset_info: {
+            missing_values: {},
+            class_imbalance_ratio: 0,
+            target_distribution: {},
+            protected_groups_stats: {},
+          },
+          fairness_metrics: [],
+          shap_results: {
+            top_features: [],
+            protected_attr_in_top_k: false,
+            protected_attrs_found: [],
+          },
+          narrative: {
+            summary: '',
+            severity_rating: 'LOW',
+            affected_groups: [],
+            root_cause_analysis: '',
+            remediation_steps: [],
+            plain_english_explanation: '',
+          },
+          progress_pct: progress_pct ?? 0,
+          current_step: current_step ?? 'running',
+          error_message: error_message ?? null,
+          created_at: null,
+          completed_at: null,
+        };
+
+        setAuditResult(runningResult);
+        return false; // Continue polling
+      }
+
       if (status === 'FAILED') {
         const failedResult: AuditResult = {
           audit_id: auditId,
