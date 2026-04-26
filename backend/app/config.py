@@ -74,7 +74,12 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-1.5-pro"
     
     # App Settings
-    backend_cors_origins: List[str] = ["http://localhost:5173", "https://fairlens.vercel.app"]
+    backend_cors_origins: List[str] = [
+        "http://localhost:5173",
+        "https://fairlens.vercel.app",
+        "https://fair-lens-bice.vercel.app",
+    ]
+    backend_cors_origin_regex: Optional[str] = r"https://.*\.vercel\.app"
     max_upload_size_mb: int = 50
     min_audit_rows: int = 3
 
