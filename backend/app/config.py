@@ -1,14 +1,65 @@
+import base64
+import json
 import os
+import tempfile
 from typing import List, Optional
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+def _configure_google_credentials() -> None:
+    """Populate GOOGLE_APPLICATION_CREDENTIALS from local file or env secrets."""
+    existing_creds = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+    if existing_creds and Path(existing_creds).exists():
+        return
+
+    creds_json = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+    if creds_json:
+        try:
+            creds_data = json.loads(creds_json)
+            temp_file = tempfile.NamedTemporaryFile(
+                mode='w',
+                encoding='utf-8',
+                suffix='.json',
+                prefix='fairlens-gcp-',
+                delete=False,
+            )
+            with temp_file:
+                json.dump(creds_data, temp_file)
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = temp_file.name
+            print(f"[OK] Set GOOGLE_APPLICATION_CREDENTIALS from GOOGLE_APPLICATION_CREDENTIALS_JSON: {temp_file.name}")
+            return
+        except json.JSONDecodeError as exc:
+            raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_JSON must contain valid JSON") from exc
+
+    creds_b64 = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_B64')
+    if creds_b64:
+        try:
+            decoded = base64.b64decode(creds_b64).decode('utf-8')
+            creds_data = json.loads(decoded)
+            temp_file = tempfile.NamedTemporaryFile(
+                mode='w',
+                encoding='utf-8',
+                suffix='.json',
+                prefix='fairlens-gcp-',
+                delete=False,
+            )
+            with temp_file:
+                json.dump(creds_data, temp_file)
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = temp_file.name
+            print(f"[OK] Set GOOGLE_APPLICATION_CREDENTIALS from GOOGLE_APPLICATION_CREDENTIALS_B64: {temp_file.name}")
+            return
+        except Exception as exc:
+            raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_B64 must contain base64-encoded service account JSON") from exc
+
+    local_creds_path = Path('./service-account.json').resolve()
+    if local_creds_path.exists():
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = str(local_creds_path)
+        print(f"[OK] Set GOOGLE_APPLICATION_CREDENTIALS to {local_creds_path}")
+
+
 # Set up Google Cloud credentials before anything else
-_creds_path = Path('./service-account.json').resolve()
-if _creds_path.exists():
-    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = str(_creds_path)
-    print(f"[OK] Set GOOGLE_APPLICATION_CREDENTIALS to {_creds_path}")
+_configure_google_credentials()
 
 
 class Settings(BaseSettings):

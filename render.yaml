@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: fairlens-backend
+    env: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: GOOGLE_CLOUD_PROJECT
+        sync: false
+      - key: GOOGLE_APPLICATION_CREDENTIALS_JSON
+        sync: false
+      - key: GOOGLE_APPLICATION_CREDENTIALS_B64
+        sync: false
+      - key: GCS_BUCKET_NAME
+        sync: false
+      - key: FIRESTORE_COLLECTION
+        sync: false
+      - key: VERTEX_AI_LOCATION
+        sync: false
+      - key: GEMINI_MODEL
+        sync: false
+      - key: BACKEND_CORS_ORIGINS
+        sync: false
+      - key: MAX_UPLOAD_SIZE_MB
+        sync: false
