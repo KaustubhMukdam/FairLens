@@ -90,15 +90,7 @@ function App() {
             <a className="text-slate-500 hover:text-indigo-600 transition-colors" href="#docs">Documentation</a>
             <a className="text-slate-500 hover:text-indigo-600 transition-colors" href="https://github.com/KaustubhMukdam/FairLens" target="_blank" rel="noreferrer">GitHub</a>
           </div>
-          <div className="flex items-center gap-4">
-            <button className="text-slate-500 hover:text-indigo-600 font-medium px-4 py-2 transition-all">Sign In</button>
-            <button
-              className="bg-primary-container text-on-primary-container px-6 py-2.5 rounded-full font-bold hover:bg-primary hover:text-white transition-all shadow-sm"
-              onClick={() => document.getElementById('upload-input')?.click()}
-            >
-              Get Started
-            </button>
-          </div>
+          <div />
         </div>
       </nav>
 
