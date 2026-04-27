@@ -15,6 +15,7 @@ Functions:
 import json
 import os
 import uuid
+import tempfile
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 from app.config import settings
@@ -34,7 +35,8 @@ class FirestoreService:
     
     def __init__(self):
         self.use_local = False
-        self.local_storage_path = "/tmp/fairlens_audits"
+        self.local_storage_path = os.path.join(tempfile.gettempdir(), "fairlens_audits")
+        self.firestore_timeout_sec = 10
         
         try:
             if FIRESTORE_AVAILABLE:
@@ -72,7 +74,10 @@ class FirestoreService:
             self._local_save(audit_id, audit_doc)
         else:
             try:
-                self.client.collection(self.collection_name).document(audit_id).set(audit_doc)
+                self.client.collection(self.collection_name).document(audit_id).set(
+                    audit_doc,
+                    timeout=self.firestore_timeout_sec,
+                )
             except Exception as e:
                 print(f"ERROR saving audit to Firestore: {e}")
                 self._local_save(audit_id, audit_doc)
@@ -92,15 +97,46 @@ class FirestoreService:
             if audit_doc:
                 audit_doc.update(updates)
                 self._local_save(audit_id, audit_doc)
+            else:
+                self._local_save(audit_id, {
+                    "audit_id": audit_id,
+                    "status": updates.get("status", AuditStatus.RUNNING.value),
+                    "created_at": datetime.utcnow().isoformat(),
+                    **updates,
+                })
         else:
             try:
-                self.client.collection(self.collection_name).document(audit_id).update(updates)
+                self.client.collection(self.collection_name).document(audit_id).update(
+                    updates,
+                    timeout=self.firestore_timeout_sec,
+                )
             except Exception as e:
                 print(f"ERROR updating audit in Firestore: {e}")
+                try:
+                    # Fallback to merge-set when document update fails due missing doc/transient errors.
+                    self.client.collection(self.collection_name).document(audit_id).set(
+                        {
+                            "audit_id": audit_id,
+                            "created_at": datetime.utcnow().isoformat(),
+                            **updates,
+                        },
+                        merge=True,
+                        timeout=self.firestore_timeout_sec,
+                    )
+                    return
+                except Exception as set_err:
+                    print(f"ERROR merge-setting audit in Firestore: {set_err}")
                 audit_doc = self._local_load(audit_id)
                 if audit_doc:
                     audit_doc.update(updates)
                     self._local_save(audit_id, audit_doc)
+                else:
+                    self._local_save(audit_id, {
+                        "audit_id": audit_id,
+                        "status": updates.get("status", AuditStatus.RUNNING.value),
+                        "created_at": datetime.utcnow().isoformat(),
+                        **updates,
+                    })
     
     def get_audit(self, audit_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -116,7 +152,9 @@ class FirestoreService:
             return self._local_load(audit_id)
         
         try:
-            doc = self.client.collection(self.collection_name).document(audit_id).get()
+            doc = self.client.collection(self.collection_name).document(audit_id).get(
+                timeout=self.firestore_timeout_sec
+            )
             if doc.exists:
                 return doc.to_dict()
             return None
@@ -137,7 +175,9 @@ class FirestoreService:
                 os.remove(local_path)
         else:
             try:
-                self.client.collection(self.collection_name).document(audit_id).delete()
+                self.client.collection(self.collection_name).document(audit_id).delete(
+                    timeout=self.firestore_timeout_sec
+                )
             except Exception as e:
                 print(f"ERROR deleting audit from Firestore: {e}")
     
@@ -168,7 +208,7 @@ class FirestoreService:
                 self.client.collection(self.collection_name)
                 .order_by("created_at", direction=firestore.Query.DESCENDING)
                 .limit(limit)
-                .stream()
+                .stream(timeout=self.firestore_timeout_sec)
             )
             return [doc.to_dict() for doc in docs]
         except Exception as e:

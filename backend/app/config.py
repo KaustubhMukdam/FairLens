@@ -71,17 +71,20 @@ class Settings(BaseSettings):
     
     # Vertex AI
     vertex_ai_location: str = "us-central1"
-    gemini_model: str = "gemini-1.5-pro"
+    gemini_model: str = "gemini-2.5-pro"
     
     # App Settings
     backend_cors_origins: List[str] = [
         "http://localhost:5173",
         "https://fairlens.vercel.app",
         "https://fair-lens-bice.vercel.app",
+        "https://fair-lens-git-main-kaustubhs-projects-8cdc8a98.vercel.app/",
+        "https://fair-lens-5vvdwbizt-kaustubhs-projects-8cdc8a98.vercel.app/"
     ]
     backend_cors_origin_regex: Optional[str] = r"https://.*\.vercel\.app"
     max_upload_size_mb: int = 50
     min_audit_rows: int = 3
+    csv_parse_timeout_seconds: int = 60
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

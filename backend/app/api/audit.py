@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 from datetime import datetime
 import traceback
 import uuid
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 
 import pandas as pd
 from app.models.audit import AuditRequest, AuditResult, AuditStatus
@@ -32,6 +33,21 @@ from app.services.gemini_service import generate_audit_narrative
 from app.config import settings
 
 router = APIRouter(prefix="/audit", tags=["audit"])
+
+
+def _parse_csv_with_timeout(file_bytes: bytes, timeout_seconds: int) -> pd.DataFrame:
+    """Parse CSV in a worker thread so stalled parses fail fast with a clear error."""
+    executor = ThreadPoolExecutor(max_workers=1)
+    future = executor.submit(parse_csv, file_bytes)
+    try:
+        return future.result(timeout=timeout_seconds)
+    except FuturesTimeoutError as exc:
+        future.cancel()
+        raise TimeoutError(
+            f"CSV parsing exceeded {timeout_seconds}s. Try a smaller file or fewer columns."
+        ) from exc
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
 
 
 def _run_audit_pipeline(
@@ -70,7 +86,7 @@ def _run_audit_pipeline(
         })
         
         try:
-            df = parse_csv(file_bytes)
+            df = _parse_csv_with_timeout(file_bytes, settings.csv_parse_timeout_seconds)
         except Exception as e:
             raise ValueError(f"Failed to parse CSV: {str(e)}")
         
