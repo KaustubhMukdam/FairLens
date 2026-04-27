@@ -81,7 +81,6 @@ export const AuditSetup = ({ columns, fileName, fileId, onAuditStart, onBack }: 
           </div>
           <div className="flex gap-x-4">
             <button onClick={onBack} className="text-slate-500 hover:text-indigo-600 px-4 py-2 text-sm font-medium">← Back</button>
-            <button className="bg-primary text-white px-6 py-2 rounded-full font-semibold hover:opacity-90 transition-all shadow-lg shadow-indigo-500/20 text-sm">Get Started</button>
           </div>
         </div>
       </nav>

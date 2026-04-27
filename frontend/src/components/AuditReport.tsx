@@ -73,12 +73,7 @@ export const AuditReport = ({ auditId }: AuditReportProps) => {
             <a className="text-slate-500 hover:text-indigo-600 transition-colors" href="#">Methodology</a>
             <a className="text-slate-500 hover:text-indigo-600 transition-colors" href="#">Documentation</a>
           </nav>
-          <div className="flex gap-4">
-            <button className="text-indigo-600 px-4 py-2 font-medium">Sign In</button>
-            <button className="bg-primary-container text-on-primary-container px-6 py-2 rounded-full font-bold hover:scale-95 duration-200 transition-all">
-              Get Started
-            </button>
-          </div>
+          <div />
         </div>
       </header>
 

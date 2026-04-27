@@ -37,10 +37,7 @@ export const AuditRunning = ({ progress, currentStep }: AuditRunningProps) => {
             <a className="text-slate-500 hover:text-indigo-600 tracking-tight leading-snug" href="#">Methodology</a>
             <a className="text-slate-500 hover:text-indigo-600 tracking-tight leading-snug" href="#">Documentation</a>
           </div>
-          <div className="flex items-center gap-4">
-            <button className="px-5 py-2 text-indigo-600 font-semibold hover:bg-slate-100/50 transition-colors rounded-full text-sm">Sign In</button>
-            <button className="px-6 py-2 bg-gradient-to-r from-primary to-primary-container text-white rounded-full font-semibold shadow-sm hover:scale-95 duration-200 text-sm">Get Started</button>
-          </div>
+          <div />
         </div>
       </nav>
 
