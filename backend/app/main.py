@@ -19,6 +19,14 @@ app.include_router(upload.router)
 app.include_router(audit.router)
 app.include_router(chat.router)
 
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "fairlens-api"}
+
+@app.head("/")
+def root_head():
+    return {"status": "ok"}
+
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
